@@ -1,0 +1,36 @@
+node_modules
+temp
+build
+dist
+bench-snapshots
+fift-output
+.DS_Store
+package.ts
+
+contracts/auto
+
+# Local references (not part of the repo)
+.refs
+
+# VS Code
+.vscode/*
+.history/
+*.vsix
+
+# IDEA files
+.idea
+
+# VIM
+Session.vim
+.vim/
+
+# Other private editor folders
+.nvim/
+.emacs/
+.helix/
+
+# Local env and wallets (keep private)
+.env
+.env.*
+!.env.example
+.local/

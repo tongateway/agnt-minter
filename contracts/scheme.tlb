@@ -1,0 +1,23 @@
+bool_false$0 = Bool;
+bool_true$1 = Bool;
+addr_std$100 workchain_id:int8 address:bits256 = Address;
+// ====================
+
+_ owner_address:Address price:Coins amount:Coins agent_public_key:uint256 = MintContext;
+
+_$_ is_mint_claimed:Bool service_public_key:uint256
+    mint_master_address:Address mint_context^MintContext
+    = MintKeeperStorage;
+
+_$_ is_mint_enabled:Bool service_public_key:uint256
+    jetton_minter_address:Address admin_address:Address
+    = MintMasterStorage;
+
+claim_mint#c8c37acc query_id:uint64 signature:bits512 = InternalMsgBody;
+request_mint_jettons#cfccc2c4 query_id:uint64 mint_context:MintContext = InternalMsgBody;
+toggle_mint#61c5c9d6 query_id:uint64 enable_mint:Bool = InternalMsgBody;
+withdraw_tons#6d8e5e3c query_id:uint64 = InternalMsgBody;
+
+
+change_jetton_admin#6501f354 query_id:uint64 new_admin_address:Address = InternalMsgBody;
+claim_jetton_admin#fb88e119 query_id:uint64 = InternalMsgBody;
