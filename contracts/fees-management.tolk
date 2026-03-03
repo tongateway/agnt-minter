@@ -17,14 +17,14 @@ const JETTON_WALLET_MIN_STORAGE_DURATION = 5 * 365 * 24 * 60 * 60 // 5 years
 // ============================================================================
 
 // Keep contract reserve for long-term storage (code + data, measured in tests).
-const STORAGE_SIZE_MintKeeper_bits = 3781;
+const STORAGE_SIZE_MintKeeper_bits = 4157;
 const STORAGE_SIZE_MintKeeper_cells = 12;
-const STORAGE_SIZE_MintMaster_bits = 12369;
-const STORAGE_SIZE_MintMaster_cells = 41;
+const STORAGE_SIZE_MintMaster_bits = 13501;
+const STORAGE_SIZE_MintMaster_cells = 44;
 
 // Gas units for keeper/master part.
-const GAS_CONSUMPTION_MintKeeperClaim = 6437;
-const GAS_CONSUMPTION_MintMasterRequestMint = 9407;
+const GAS_CONSUMPTION_MintKeeperClaim = 6788;
+const GAS_CONSUMPTION_MintMasterRequestMint = 9397;
 
 // ============================================================================
 // Mint fees: master -> jetton-master -> jetton-wallet
