@@ -148,10 +148,9 @@ export class MintMaster implements Contract {
         return stack.readBigNumber();
     }
 
-    async getClaimMintRequiredValue(provider: ContractProvider, price: bigint, amount: bigint): Promise<bigint> {
+    async getClaimMintRequiredValue(provider: ContractProvider, price: bigint): Promise<bigint> {
         const { stack } = await provider.get('get_claim_mint_required_value', [
             { type: 'int', value: price },
-            { type: 'int', value: amount },
         ]);
         return stack.readBigNumber();
     }

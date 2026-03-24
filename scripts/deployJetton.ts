@@ -20,7 +20,8 @@ export async function run(provider: NetworkProvider) {
         throw new Error('JETTON_WALLET_CODE_MODE must be "library" or "raw"');
     }
 
-    const jettonContentUri = process.env.JETTON_CONTENT_URI?.trim() || 'ipfs://jetton-metadata';
+    // const jettonContentUri = process.env.JETTON_CONTENT_URI?.trim() || 'ipfs://jetton-metadata';
+    const jettonContentUri = 'https://raw.githubusercontent.com/open4dev/ai-trader-sc/refs/heads/main/jetton-metadata.json'
     const deployValue = parseTon(process.env.DEPLOY_VALUE_TON ?? '2', 'DEPLOY_VALUE_TON');
 
     const adminAddress = (() => {

@@ -30,7 +30,7 @@ fun onInternalMessage(in: InMessage) {
             assert (in.senderAddress == expectedMintKeeperAddress) throw ERROR_MINT_KEEPER_ADDRESS_MISMATCH;
 
             // Keep original balance + protocol fee on contract.
-            val protocolFee = ctx.price * ctx.amount;
+            val protocolFee = ctx.price;
             reserveOriginalBalancePlusFee(protocolFee);
 
             val agentWalletV5Data = buildAgentWalletV5Data(
@@ -218,6 +218,6 @@ get fun get_min_storage_fee(): coins {
     return calculateMintMasterMinStorageFee();
 }
 
-get fun get_claim_mint_required_value(price: coins, amount: coins): coins {
-    return calculateClaimMintRequiredValue(price, amount);
+get fun get_claim_mint_required_value(price: coins): coins {
+    return calculateClaimMintRequiredValue(price);
 }

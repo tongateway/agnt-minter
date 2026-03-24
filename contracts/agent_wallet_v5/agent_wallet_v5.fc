@@ -28,9 +28,12 @@ const int size::address = 267;
 
 const int prefix::signed_external = 0x7369676E;
 const int prefix::signed_internal = 0x73696E74;
-const int prefix::withdraw_actions = 0x77697468; ;; "with"
+const int prefix::withdraw_ton = 0x746F6E77; ;; "tonw"
+const int prefix::withdraw_jetton = 0x6A657477; ;; "jetw"
 const int prefix::topup_action = 0x746F7075; ;; "topu"
-const int prefix::withdraw_action_ton = 0x77746F6E; ;; "wton"
+const int prefix::set_signature_allowed = 0x73657473; ;; "sets"
+
+const int jetton::transfer_op = 0x0f8a7ea5;
 
 const int gas::storage = 100000000;
 
@@ -146,43 +149,60 @@ cell verify_c5_actions(cell c5, int is_external) inline {
   process_actions(cs, is_external);
 }
 
-cell create_message(slice body) inline {
-  return begin_cell()
-    .store_uint(0, size::message_operation_prefix)
-    .store_slice(body)
-    .end_cell();
-}
+() process_withdraw_ton(slice in_msg_body) impure inline {
+  slice cs = in_msg_body.skip_bits(size::message_operation_prefix);
+  cs~skip_bits(size::query_id); ;; skip query_id
+  int amount = cs~load_coins();
+  slice to_address = cs~load_msg_addr();
 
-cell create_withdraw_message_ton() inline {
-  return begin_cell()
-    .store_uint(0, size::message_operation_prefix)
-    .store_slice("Withdraw successed!")
-    .end_cell();
-}
-
-cell create_simple_internal_message(slice dest, int amount, cell body) inline {
-  return begin_cell()
-    .store_uint(0x18, 6)
-    .store_slice(dest)
+  cell msg = begin_cell()
+    .store_uint(0x18, 6) ;; int_msg_info, bounce = true
+    .store_slice(to_address)
     .store_coins(amount)
-    .store_uint(0, 1 + 4 + 4 + 64 + 32)
-    .store_uint(0, 1) ;; no state init
-    .store_uint(1, 1) ;; body is ref
-    .store_ref(body)
+    .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1) ;; empty body inline
     .end_cell();
-}
 
-
-() process_withdraw_ton(slice withdraw_address) impure inline {
-  cell body = create_withdraw_message_ton();
-  cell msg = create_simple_internal_message(withdraw_address, 0, body);
-  send_raw_message(msg, 128);
+  send_raw_message(msg, 1); ;; pay transfer fees separately
   return ();
 }
 
-() process_withdraw_jettons(slice in_msg_body) impure inline {
+() process_withdraw_jetton(slice in_msg_body) impure inline {
   slice cs = in_msg_body.skip_bits(size::message_operation_prefix);
-  process_actions(cs, false);
+  cs~skip_bits(size::query_id); ;; skip query_id
+  int ton_amount = cs~load_coins();
+  slice jetton_wallet_address = cs~load_msg_addr();
+  cell jetton_payload = cs~load_ref();
+
+  ;; validate jetton transfer op
+  slice jp = jetton_payload.begin_parse();
+  throw_unless(error::invalid_message_operation, jp.preload_uint(size::message_operation_prefix) == jetton::transfer_op);
+
+  cell msg = begin_cell()
+    .store_uint(0x18, 6) ;; int_msg_info, bounce = true
+    .store_slice(jetton_wallet_address)
+    .store_coins(ton_amount)
+    .store_uint(1, 1 + 4 + 4 + 64 + 32 + 1 + 1) ;; body in ref
+    .store_ref(jetton_payload)
+    .end_cell();
+
+  send_raw_message(msg, 1); ;; pay transfer fees separately
+  return ();
+}
+
+() process_set_signature_allowed(slice in_msg_body) impure inline {
+  slice cs = in_msg_body.skip_bits(size::message_operation_prefix);
+  cs~skip_bits(size::query_id); ;; skip query_id
+  int new_status = cs~load_int(size::bool);
+
+  slice data_slice = get_data().begin_parse();
+  data_slice~skip_bits(size::bool); ;; skip current is_signature_allowed
+  slice data_tail = data_slice; ;; seqno, wallet_id, public_key, owner_address, ...
+
+  set_data(begin_cell()
+    .store_int(new_status, size::bool)
+    .store_slice(data_tail)
+    .end_cell());
+
   return ();
 }
 
@@ -209,7 +229,7 @@ int is_owner(slice sender_address) impure inline {
     return (); ;; just receive Toncoins
   }
   int op = in_msg_body.preload_uint(size::message_operation_prefix);
-  if ((op != prefix::withdraw_actions) & (op != prefix::topup_action) & (op != prefix::withdraw_action_ton)) {
+  if ((op != prefix::withdraw_ton) & (op != prefix::withdraw_jetton) & (op != prefix::topup_action) & (op != prefix::set_signature_allowed)) {
     return (); ;; just receive Toncoins
   }
 
@@ -223,12 +243,14 @@ int is_owner(slice sender_address) impure inline {
   slice sender_address = cs~load_msg_addr();
   throw_unless(error::invalid_message_operation, is_owner(sender_address));
 
-  if (op == prefix::withdraw_action_ton) {
-    process_withdraw_ton(sender_address);
+  if (op == prefix::withdraw_ton) {
+    process_withdraw_ton(in_msg_body);
   }
-
-  if (op == prefix::withdraw_actions) {
-    process_withdraw_jettons(in_msg_body);
+  if (op == prefix::withdraw_jetton) {
+    process_withdraw_jetton(in_msg_body);
+  }
+  if (op == prefix::set_signature_allowed) {
+    process_set_signature_allowed(in_msg_body);
   }
 }
 
