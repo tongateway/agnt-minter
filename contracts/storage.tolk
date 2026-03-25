@@ -31,6 +31,7 @@ struct MintMasterStorage {
     servicePublicKey: uint256;
     jettonMinterAddress: address;
     adminAddress: address;
+    nextAdminAddress: Cell<address>?;
 }
 
 @inline

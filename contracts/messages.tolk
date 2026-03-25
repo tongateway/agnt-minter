@@ -26,6 +26,15 @@ struct (0x6d8e5e3c) WithdrawTons {
 type ChangeJettonAdmin = ChangeMinterAdmin
 type ClaimJettonAdmin = ClaimMinterAdmin
 
+struct (0xa4ed9981) ChangeMintMasterAdmin {
+    queryId: uint64;
+    newAdminAddress: address;
+}
+
+struct (0x1b332ab2) ClaimMintMasterAdmin {
+    queryId: uint64;
+}
+
 // TopUpTons
 
 type MintMasterInMsg =
@@ -34,4 +43,6 @@ type MintMasterInMsg =
     | WithdrawTons
     | ChangeJettonAdmin
     | ClaimJettonAdmin
+    | ChangeMintMasterAdmin
+    | ClaimMintMasterAdmin
     | TopUpTons

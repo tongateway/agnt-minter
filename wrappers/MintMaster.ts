@@ -15,6 +15,8 @@ export const MintMasterOpcodes = {
     withdrawTons: 0x6d8e5e3c,
     changeJettonAdmin: 0x6501f354,
     claimJettonAdmin: 0xfb88e119,
+    changeMintMasterAdmin: 0xa4ed9981,
+    claimMintMasterAdmin: 0x1b332ab2,
     topUpTons: 0xd372158c,
 } as const;
 
@@ -23,15 +25,23 @@ export type MintMasterConfig = {
     servicePublicKey: bigint;
     jettonMinterAddress: Address;
     adminAddress: Address;
+    nextAdminAddress?: Address | null;
 };
 
 export function mintMasterConfigToCell(config: MintMasterConfig): Cell {
-    return beginCell()
+    const builder = beginCell()
         .storeBit(config.isMintEnabled)
         .storeUint(config.servicePublicKey, 256)
         .storeAddress(config.jettonMinterAddress)
-        .storeAddress(config.adminAddress)
-        .endCell();
+        .storeAddress(config.adminAddress);
+
+    if (config.nextAdminAddress) {
+        builder.storeMaybeRef(beginCell().storeAddress(config.nextAdminAddress).endCell());
+    } else {
+        builder.storeMaybeRef(null);
+    }
+
+    return builder.endCell();
 }
 
 export class MintMaster implements Contract {
@@ -118,6 +128,40 @@ export class MintMaster implements Contract {
         });
     }
 
+    async sendChangeMintMasterAdmin(
+        provider: ContractProvider,
+        via: Sender,
+        value: bigint,
+        newAdminAddress: Address,
+        queryId: bigint = 0n,
+    ) {
+        await provider.internal(via, {
+            value,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
+            body: beginCell()
+                .storeUint(MintMasterOpcodes.changeMintMasterAdmin, 32)
+                .storeUint(queryId, 64)
+                .storeAddress(newAdminAddress)
+                .endCell(),
+        });
+    }
+
+    async sendClaimMintMasterAdmin(
+        provider: ContractProvider,
+        via: Sender,
+        value: bigint,
+        queryId: bigint = 0n,
+    ) {
+        await provider.internal(via, {
+            value,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
+            body: beginCell()
+                .storeUint(MintMasterOpcodes.claimMintMasterAdmin, 32)
+                .storeUint(queryId, 64)
+                .endCell(),
+        });
+    }
+
     async getBalance(provider: ContractProvider): Promise<bigint> {
         const state = await provider.getState();
         return state.balance;
@@ -146,6 +190,11 @@ export class MintMaster implements Contract {
     async getMinStorageFee(provider: ContractProvider): Promise<bigint> {
         const { stack } = await provider.get('get_min_storage_fee', []);
         return stack.readBigNumber();
+    }
+
+    async getNextAdminAddress(provider: ContractProvider): Promise<Address | null> {
+        const { stack } = await provider.get('get_next_admin_address', []);
+        return stack.readAddressOpt();
     }
 
     async getClaimMintRequiredValue(provider: ContractProvider, price: bigint): Promise<bigint> {

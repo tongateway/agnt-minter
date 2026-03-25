@@ -293,6 +293,140 @@ describe('MintMaster', () => {
                 exitCode: Errors.notAdmin,
             });
         });
+
+        it('allows admin to change MintMaster admin (two-step)', async () => {
+            const newAdmin = await blockchain.treasury('new-admin');
+
+            // Step 1: admin sets nextAdminAddress
+            const changeResult = await mintMaster.sendChangeMintMasterAdmin(
+                admin.getSender(),
+                toNano('0.1'),
+                newAdmin.address,
+                1n,
+            );
+
+            expect(changeResult.transactions).toHaveTransaction({
+                from: admin.address,
+                to: mintMaster.address,
+                success: true,
+            });
+
+            const nextAdmin = await mintMaster.getNextAdminAddress();
+            expect(nextAdmin).toEqualAddress(newAdmin.address);
+
+            // Admin is still the old one
+            const dataMid = await mintMaster.getMintMasterData();
+            expect(dataMid.adminAddress).toEqualAddress(admin.address);
+
+            // Step 2: new admin claims
+            const claimResult = await mintMaster.sendClaimMintMasterAdmin(
+                newAdmin.getSender(),
+                toNano('0.1'),
+                2n,
+            );
+
+            expect(claimResult.transactions).toHaveTransaction({
+                from: newAdmin.address,
+                to: mintMaster.address,
+                success: true,
+            });
+
+            const dataAfter = await mintMaster.getMintMasterData();
+            expect(dataAfter.adminAddress).toEqualAddress(newAdmin.address);
+
+            // nextAdminAddress should be cleared
+            const nextAdminAfter = await mintMaster.getNextAdminAddress();
+            expect(nextAdminAfter).toBeNull();
+        });
+
+        it('rejects ChangeMintMasterAdmin from non-admin', async () => {
+            const newAdmin = await blockchain.treasury('new-admin');
+
+            const result = await mintMaster.sendChangeMintMasterAdmin(
+                user.getSender(),
+                toNano('0.1'),
+                newAdmin.address,
+                1n,
+            );
+
+            expect(result.transactions).toHaveTransaction({
+                on: mintMaster.address,
+                from: user.address,
+                success: false,
+                exitCode: Errors.notAdmin,
+            });
+        });
+
+        it('rejects ClaimMintMasterAdmin from wrong address', async () => {
+            const newAdmin = await blockchain.treasury('new-admin');
+
+            // Set next admin first
+            await mintMaster.sendChangeMintMasterAdmin(
+                admin.getSender(),
+                toNano('0.1'),
+                newAdmin.address,
+                1n,
+            );
+
+            // Try to claim from user (not newAdmin)
+            const result = await mintMaster.sendClaimMintMasterAdmin(
+                user.getSender(),
+                toNano('0.1'),
+                2n,
+            );
+
+            expect(result.transactions).toHaveTransaction({
+                on: mintMaster.address,
+                from: user.address,
+                success: false,
+                exitCode: Errors.notNextAdmin,
+            });
+
+            // Admin unchanged
+            const data = await mintMaster.getMintMasterData();
+            expect(data.adminAddress).toEqualAddress(admin.address);
+        });
+
+        it('rejects ClaimMintMasterAdmin when nextAdmin is not set', async () => {
+            const result = await mintMaster.sendClaimMintMasterAdmin(
+                user.getSender(),
+                toNano('0.1'),
+                1n,
+            );
+
+            expect(result.transactions).toHaveTransaction({
+                on: mintMaster.address,
+                from: user.address,
+                success: false,
+                exitCode: Errors.notNextAdmin,
+            });
+        });
+
+        it('new admin can use admin operations after transfer', async () => {
+            const newAdmin = await blockchain.treasury('new-admin');
+
+            // Transfer admin
+            await mintMaster.sendChangeMintMasterAdmin(admin.getSender(), toNano('0.1'), newAdmin.address, 1n);
+            await mintMaster.sendClaimMintMasterAdmin(newAdmin.getSender(), toNano('0.1'), 2n);
+
+            // New admin can toggle mint
+            const toggleResult = await mintMaster.sendToggleMint(newAdmin.getSender(), toNano('0.1'), false);
+            expect(toggleResult.transactions).toHaveTransaction({
+                from: newAdmin.address,
+                to: mintMaster.address,
+                success: true,
+            });
+            expect(await mintMaster.getIsMintEnabled()).toBe(false);
+
+            // Old admin cannot toggle mint anymore
+            const rejectResult = await mintMaster.sendToggleMint(admin.getSender(), toNano('0.1'), true);
+            expect(rejectResult.transactions).toHaveTransaction({
+                on: mintMaster.address,
+                from: admin.address,
+                success: false,
+                exitCode: Errors.notAdmin,
+            });
+        });
     });
 
     describe('Jetton admin proxying', () => {

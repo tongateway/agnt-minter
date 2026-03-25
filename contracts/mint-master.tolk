@@ -109,6 +109,48 @@ fun onInternalMessage(in: InMessage) {
             );
         }
 
+        ChangeMintMasterAdmin => {
+            assert (in.senderAddress == storage.adminAddress) throw ERROR_NOT_ADMIN;
+
+            storage.nextAdminAddress = beginCell().storeAddress(msg.newAdminAddress).endCell() as Cell<address>;
+            storage.save();
+
+            reserveOriginalBalance();
+
+            val excessMsg = createMessage({
+                bounce: BounceMode.NoBounce,
+                value: 0,
+                dest: storage.adminAddress,
+                body: ReturnExcessesBack {
+                    queryId: msg.queryId
+                }
+            });
+            excessMsg.send(SEND_MODE_CARRY_ALL_BALANCE | SEND_MODE_IGNORE_ERRORS);
+        }
+
+        ClaimMintMasterAdmin => {
+            val nextAdminCell = storage.nextAdminAddress;
+            assert (nextAdminCell != null) throw ERROR_NOT_NEXT_ADMIN;
+            val nextAdmin = nextAdminCell!.beginParse().loadAddress();
+            assert (in.senderAddress == nextAdmin) throw ERROR_NOT_NEXT_ADMIN;
+
+            storage.adminAddress = nextAdmin;
+            storage.nextAdminAddress = null;
+            storage.save();
+
+            reserveOriginalBalance();
+
+            val excessMsg = createMessage({
+                bounce: BounceMode.NoBounce,
+                value: 0,
+                dest: storage.adminAddress,
+                body: ReturnExcessesBack {
+                    queryId: msg.queryId
+                }
+            });
+            excessMsg.send(SEND_MODE_CARRY_ALL_BALANCE | SEND_MODE_IGNORE_ERRORS);
+        }
+
         TopUpTons => {
             // Accept TONs.
         }
@@ -220,4 +262,13 @@ get fun get_min_storage_fee(): coins {
 
 get fun get_claim_mint_required_value(price: coins): coins {
     return calculateClaimMintRequiredValue(price);
+}
+
+get fun get_next_admin_address(): address? {
+    val storage = lazy MintMasterStorage.load();
+    val nextAdminCell = storage.nextAdminAddress;
+    if (nextAdminCell == null) {
+        return null;
+    }
+    return nextAdminCell!.beginParse().loadAddress();
 }
