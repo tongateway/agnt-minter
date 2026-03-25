@@ -217,8 +217,8 @@ fun calculateClaimMintFlowFees(): coins {
 }
 
 @inline
-fun calculateClaimMintRequiredValue(price: coins, amount: coins): coins {
-    val protocolFee = price * amount;
+fun calculateClaimMintRequiredValue(price: coins): coins {
+    val protocolFee = price;
     return
         calculateClaimMintFlowFees() +
         protocolFee;

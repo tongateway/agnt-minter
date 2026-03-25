@@ -268,7 +268,7 @@ describe('Fee Budget Invariants', () => {
 
         const mintAmount = toNano('1');
         const mintPrice = 1n;
-        const protocolFee = mintPrice * mintAmount;
+        const protocolFee = mintPrice;
 
         const mintContext = {
             ownerAddress: env.user.address,

@@ -127,9 +127,9 @@ describe('Mint Flow', () => {
 
         const mintAmount = toNano('1');
         const mintPrice = 1n;
-        const protocolFee = mintPrice * mintAmount;
+        const protocolFee = mintPrice;
 
-        const requiredClaimValue = await mintMaster.getClaimMintRequiredValue(mintPrice, mintAmount);
+        const requiredClaimValue = await mintMaster.getClaimMintRequiredValue(mintPrice);
 
         const mintContext = {
             ownerAddress: user.address,

@@ -19,7 +19,7 @@ fun onInternalMessage(in: InMessage) {
             assert (ctx.ownerAddress.getWorkchain() == MY_WORKCHAIN) throw ERROR_WRONG_WORKCHAIN;
             assert (in.senderAddress == ctx.ownerAddress) throw ERROR_NOT_OWNER_TRYING_TO_CLAIM_MINT;
 
-            val requiredClaimValue = calculateClaimMintRequiredValue(ctx.price, ctx.amount);
+            val requiredClaimValue = calculateClaimMintRequiredValue(ctx.price);
             assert (in.valueCoins >= requiredClaimValue) throw ERROR_NOT_ENOUGH_FUNDS_TO_CLAIM_MINT;
 
             val dataHash = contract.getData().hash();

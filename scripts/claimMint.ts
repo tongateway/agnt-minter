@@ -62,8 +62,8 @@ export async function run(provider: NetworkProvider) {
 
     const mintAmount = toNano(process.env.MINT_AMOUNT ?? '1');
     const mintPrice = parseBigInt(process.env.MINT_PRICE ?? '0', 'MINT_PRICE');
-    const protocolFee = mintPrice * mintAmount;
-    const requiredClaimValue = await mintMaster.getClaimMintRequiredValue(mintPrice, mintAmount);
+    const protocolFee = mintPrice;
+    const requiredClaimValue = await mintMaster.getClaimMintRequiredValue(mintPrice);
 
     let agentPublicKey = process.env.AGENT_WALLET_PUBLIC_KEY
         ? parseBigInt(process.env.AGENT_WALLET_PUBLIC_KEY, 'AGENT_WALLET_PUBLIC_KEY')

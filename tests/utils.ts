@@ -18,6 +18,7 @@ export const Errors = {
     mintKeeperAddressMismatch: 206,
     notAdmin: 207,
     wrongWorkchain: 209,
+    notNextAdmin: 210,
 } as const;
 
 export async function createBlockchain(now: number = DEFAULT_NOW): Promise<Blockchain> {
